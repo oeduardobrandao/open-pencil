@@ -1,8 +1,11 @@
 import type { Editor, EditorState } from '@open-pencil/core/editor'
 import { exportFigFile } from '@open-pencil/core/io/formats/fig'
 
+import { watchDebounced } from '@vueuse/core'
+
 import { createAutosave } from '@/app/document/autosave'
-import { embedConfig, saveEmbedDocument } from '@/app/embed'
+import { EmbedAuthError, EmbedConflictError, bridge, embedClient, embedConfig } from '@/app/embed'
+import { toast } from '@/app/shell/ui'
 import {
   documentNameFromFigPath,
   downloadNameFromPath,
@@ -71,10 +74,40 @@ export function createDocumentSourceActions({
     }
   })
 
-  // SPIKE embed: HTTP-backed document source
+  // MESAAS: HTTP-backed document source — save through the embed client,
+  // surface every outcome on the bridge (contract: estudio-v2-editor-contract.md).
   async function saveToEmbed() {
-    await saveEmbedDocument(await buildFigFile())
-    setSavedVersion(state.sceneVersion)
+    if (!embedClient) return
+    const versionAtBuild = state.sceneVersion
+    try {
+      const bytes = await buildFigFile()
+      const rev = await embedClient.saveDocument(bytes)
+      setSavedVersion(versionAtBuild)
+      bridge.emit('save:ok', { rev, bytes: bytes.length })
+      bridge.emit('dirty', { dirty: state.sceneVersion !== versionAtBuild })
+    } catch (e) {
+      if (e instanceof EmbedConflictError) {
+        toast.error('Este design foi alterado em outro lugar. Recarregue para continuar.')
+        bridge.emit('save:conflict', { rev: embedClient?.currentRev() ?? null })
+      } else if (e instanceof EmbedAuthError) {
+        bridge.emit('auth:needed')
+      } else {
+        toast.error('Falha ao salvar o design.')
+        bridge.emit('save:error', { message: e instanceof Error ? e.message : String(e) })
+      }
+      throw e
+    }
+  }
+
+  // MESAAS: dirty signal for the host shell (sceneVersion drifts from savedVersion)
+  if (embedConfig) {
+    watchDebounced(
+      () => state.sceneVersion,
+      (version) => {
+        if (version !== getSavedVersion()) bridge.emit('dirty', { dirty: true })
+      },
+      { debounce: 300 }
+    )
   }
 
   const { disposeAutosave } = createAutosave({

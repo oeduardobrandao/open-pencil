@@ -6,7 +6,8 @@ import type { SceneGraph } from '@open-pencil/core/scene-graph'
 
 import { createDocumentExportActions } from '@/app/document/export'
 import { createDocumentIOActions } from '@/app/document/io'
-import { embedConfig, fetchEmbedDocument } from '@/app/embed'
+import { awaitFirstAuth, bridge, embedClient, embedConfig, exposeDevProbe } from '@/app/embed'
+import { toast } from '@/app/shell/ui'
 import type { ViewportSize } from '@/app/document/io/types'
 import { createFlashActions } from '@/app/editor/flash'
 import { createMobileClipboardActions } from '@/app/editor/mobile-clipboard'
@@ -61,11 +62,31 @@ export function createEditorStoreModules(
   const pen = createPenActions(editor, graph, state)
   const vectorEdit = createVectorEditActions(editor, graph, state)
   const documentIO = createDocumentIOActions(editor, state, viewportSize)
-  // SPIKE embed: load the HTTP-backed document at boot; expose a probe handle
-  if (embedConfig) {
+  // MESAAS: embed boot — announce ready, wait for the parent's auth, load the
+  // HTTP-backed document, focus the content page, report doc:loaded.
+  if (embedConfig && embedClient) {
     state.autosaveEnabled = true
-    void fetchEmbedDocument().then((f) => documentIO.openFigFile(f))
-    ;(window as unknown as Record<string, unknown>).__opSession = { editor, state }
+    exposeDevProbe({ editor, state })
+    bridge.on('save', () => {
+      void documentIO.saveFigFile()
+    })
+    void (async () => {
+      try {
+        bridge.emit('ready')
+        await awaitFirstAuth()
+        const { file, rev } = await embedClient.fetchDocument()
+        await documentIO.openFigFile(file)
+        const contentPage = editor.graph.getPages().find((p) => p.childIds.length > 0)
+        if (contentPage) {
+          state.currentPageId = contentPage.id
+          await documentIO.fitCurrentPageToViewport()
+        }
+        bridge.emit('doc:loaded', { rev })
+      } catch (e) {
+        toast.error('Não foi possível carregar o design.')
+        bridge.emit('save:error', { message: e instanceof Error ? e.message : String(e) })
+      }
+    })()
   }
   const documentExport = createDocumentExportActions(editor, state, io, documentIO.downloadBlob)
   const mobileClipboard = createMobileClipboardActions(editor, state)
