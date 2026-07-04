@@ -11,7 +11,7 @@ function docResponse() {
 
 test('GET sends bearer token and captures rev', async () => {
   const fetchMock = mock(async () => docResponse())
-  const client = createEmbedClient(cfg, fetchMock as unknown as typeof fetch)
+  const client = createEmbedClient(cfg, fetchMock)
   client.setAccessToken('tok-1')
   const { rev } = await client.fetchDocument()
   expect(rev).toBe(7)
@@ -25,7 +25,7 @@ test('PUT sends x-expected-rev and updates rev from response', async () => {
       ? new Response('ok', { status: 200, headers: { 'x-rev': '8' } })
       : docResponse()
   )
-  const client = createEmbedClient(cfg, fetchMock as unknown as typeof fetch)
+  const client = createEmbedClient(cfg, fetchMock)
   client.setAccessToken('tok-1')
   await client.fetchDocument()
   const rev = await client.saveDocument(new Uint8Array([9]))
@@ -38,7 +38,7 @@ test('409 throws EmbedConflictError and suspends saving', async () => {
   const fetchMock = mock(async (_url: string, init?: RequestInit) =>
     init?.method === 'PUT' ? new Response('conflict', { status: 409 }) : docResponse()
   )
-  const client = createEmbedClient(cfg, fetchMock as unknown as typeof fetch)
+  const client = createEmbedClient(cfg, fetchMock)
   client.setAccessToken('tok-1')
   await client.fetchDocument()
   expect(client.saveDocument(new Uint8Array([9]))).rejects.toBeInstanceOf(EmbedConflictError)
@@ -50,7 +50,7 @@ test('401 throws EmbedAuthError and does NOT suspend', async () => {
   const fetchMock = mock(async (_url: string, init?: RequestInit) =>
     init?.method === 'PUT' ? new Response('unauthorized', { status: 401 }) : docResponse()
   )
-  const client = createEmbedClient(cfg, fetchMock as unknown as typeof fetch)
+  const client = createEmbedClient(cfg, fetchMock)
   client.setAccessToken('expired')
   await client.fetchDocument()
   expect(client.saveDocument(new Uint8Array([9]))).rejects.toBeInstanceOf(EmbedAuthError)
@@ -60,15 +60,21 @@ test('401 throws EmbedAuthError and does NOT suspend', async () => {
 // --- bridge ---
 
 test('emit posts versioned message to parent origin only', () => {
-  const post = mock(() => {})
-  const b = createBridge('https://crm.test', { postMessage: post } as unknown as Window)
+  const post = mock((_message: unknown, _target: string) => {
+    /* noop */
+  })
+  const b = createBridge('https://crm.test', { postMessage: post })
   b.emit('save:ok', { rev: 3, bytes: 100 })
   expect(post).toHaveBeenCalledWith({ v: 1, type: 'save:ok', rev: 3, bytes: 100 }, 'https://crm.test')
 })
 
 test('inbound messages are dropped unless origin and version match', () => {
   const got: string[] = []
-  const b = createBridge('https://crm.test', { postMessage: () => {} } as unknown as Window)
+  const b = createBridge('https://crm.test', {
+    postMessage: () => {
+      /* noop */
+    }
+  })
   b.on('auth', (m) => got.push((m as { accessToken: string }).accessToken))
   b.handleMessage({ origin: 'https://evil.test', data: { v: 1, type: 'auth', accessToken: 'x' } } as MessageEvent)
   b.handleMessage({ origin: 'https://crm.test', data: { v: 1, type: 'auth', accessToken: 'ok' } } as MessageEvent)

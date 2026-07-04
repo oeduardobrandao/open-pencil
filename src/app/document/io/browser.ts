@@ -5,10 +5,16 @@ export function yieldToUI(): Promise<void> {
   // iframes, which stalled document open forever. Race it with a short timeout —
   // still yields, but never blocks correctness on paint scheduling.
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(), 100)
+    let settled = false
+    const settle = () => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+    const timer = setTimeout(settle, 100)
     requestAnimationFrame(() => {
       clearTimeout(timer)
-      resolve()
+      settle()
     })
   })
 }

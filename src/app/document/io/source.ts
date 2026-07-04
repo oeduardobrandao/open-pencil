@@ -88,7 +88,7 @@ export function createDocumentSourceActions({
     } catch (e) {
       if (e instanceof EmbedConflictError) {
         toast.error('Este design foi alterado em outro lugar. Recarregue para continuar.')
-        bridge.emit('save:conflict', { rev: embedClient?.currentRev() ?? null })
+        bridge.emit('save:conflict', { rev: embedClient.currentRev() })
       } else if (e instanceof EmbedAuthError) {
         bridge.emit('auth:needed')
       } else {

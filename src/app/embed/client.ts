@@ -12,7 +12,10 @@ export class EmbedAuthError extends Error {
 
 export type EmbedConfig = { docUrl: string; parentOrigin: string | null }
 
-export function createEmbedClient(cfg: EmbedConfig, fetchImpl: typeof fetch = fetch) {
+/** Injectable fetch shape — narrow on purpose so tests can pass plain mocks. */
+export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
+
+export function createEmbedClient(cfg: EmbedConfig, fetchImpl: FetchLike = fetch) {
   let rev: number | null = null
   let token: string | null = null
   let suspended = false
@@ -42,7 +45,7 @@ export function createEmbedClient(cfg: EmbedConfig, fetchImpl: typeof fetch = fe
         'content-type': 'application/octet-stream',
         ...(rev !== null ? { 'x-expected-rev': String(rev) } : {})
       },
-      body: new Blob([bytes])
+      body: new Blob([bytes.buffer as ArrayBuffer])
     })
     if (res.status === 409) {
       suspended = true

@@ -4,6 +4,9 @@
 // Protocol reference: sm-crm docs/estudio-v2-editor-contract.md
 
 type BridgeMessage = Record<string, unknown>
+
+/** Injectable postMessage target — narrow so tests can pass plain mocks. */
+export type ParentWindow = { postMessage: (message: unknown, targetOrigin: string) => void }
 type Handler = (msg: BridgeMessage) => void
 
 export type Bridge = {
@@ -12,7 +15,7 @@ export type Bridge = {
   handleMessage: (e: MessageEvent) => void
 }
 
-export function createBridge(parentOrigin: string, parent: Window): Bridge {
+export function createBridge(parentOrigin: string, parent: ParentWindow): Bridge {
   const handlers = new Map<string, Handler[]>()
 
   function emit(type: string, payload: BridgeMessage = {}) {
@@ -26,7 +29,7 @@ export function createBridge(parentOrigin: string, parent: Window): Bridge {
   function handleMessage(e: MessageEvent) {
     if (e.origin !== parentOrigin) return
     const d = e.data as { v?: number; type?: string } | null
-    if (!d || d.v !== 1 || !d.type) return
+    if (d?.v !== 1 || !d.type) return
     for (const fn of handlers.get(d.type) ?? []) fn(d as BridgeMessage)
   }
 
