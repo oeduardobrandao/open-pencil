@@ -17,6 +17,11 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 - `src/components/PropertiesPanel.vue` — Design-only tabs in embed (marked `// MESAAS:`)
 - `src/components/LayersPanel.vue` — menubar hidden in embed (marked `// MESAAS:`)
 - `tests/engine/app/embed.test.ts` — embed unit tests (new file)
+- `packages/core/src/io/formats/fig/export.ts` — guid-counter seeding scans ALL sessions
+  (marked `// MESAAS:`, **upstream PR candidate — data-loss bug**: new-node guids mint in
+  session 1 but the collision guard only cleared session 0, so import → createNode →
+  export reused an imported session-1 guid and deleted the node that owned it)
+- `tests/engine/io/fig/roundtrip/reexport-guids.test.ts` — regression test for the above (new file)
 - `vercel.json`, `UPSTREAM.md` — deploy/docs (new files)
 
 ## Rebase procedure

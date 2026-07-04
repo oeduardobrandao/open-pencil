@@ -326,18 +326,22 @@ export async function exportFigFile(
     nodeIdToGuid
   )
 
-  // Scan ALL imported source.ids to find max sessionID:0 localID,
-  // preventing collisions between variable GUIDs and any imported node GUID.
-  let maxLocalId0 = localIdCounter.value - 1
+  // MESAAS: scan imported source.ids across EVERY session, not just session 0.
+  // New-node guids are minted as {sessionID: 1, localID: counter++} and content
+  // nodes from a previous export live in session 1 too — seeding the counter
+  // past session-0 ids only let the first node created on an imported document
+  // reuse an existing session-1 localID, silently deleting the node that owned
+  // it on the next import. (Upstream PR candidate; see UPSTREAM.md.)
+  let maxImportedLocalId = localIdCounter.value - 1
   for (const node of graph.nodes.values()) {
     if (node.source.id) {
       const guid = stringToGuid(node.source.id)
-      if (guid.sessionID === 0 && guid.localID > maxLocalId0) {
-        maxLocalId0 = guid.localID
+      if (guid.localID > maxImportedLocalId) {
+        maxImportedLocalId = guid.localID
       }
     }
   }
-  localIdCounter.value = Math.max(localIdCounter.value, maxLocalId0 + 1)
+  localIdCounter.value = Math.max(localIdCounter.value, maxImportedLocalId + 1)
 
   // Assign variable GUIDs AFTER canvas entries so that source.id-derived
   // canvas GUIDs don't collide with generated variable GUIDs.
