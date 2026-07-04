@@ -8,7 +8,10 @@ import { IS_TAURI } from '@/constants'
 import App from './App.vue'
 import router from './router'
 
+import { installEmbedChrome } from '@/app/embed'
+
 preloadFonts()
+installEmbedChrome()
 const head = createHead()
 createApp(App).use(router).use(head).mount('#app')
 

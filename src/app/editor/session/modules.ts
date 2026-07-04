@@ -6,6 +6,7 @@ import type { SceneGraph } from '@open-pencil/core/scene-graph'
 
 import { createDocumentExportActions } from '@/app/document/export'
 import { createDocumentIOActions } from '@/app/document/io'
+import { embedConfig, fetchEmbedDocument } from '@/app/embed'
 import type { ViewportSize } from '@/app/document/io/types'
 import { createFlashActions } from '@/app/editor/flash'
 import { createMobileClipboardActions } from '@/app/editor/mobile-clipboard'
@@ -60,6 +61,12 @@ export function createEditorStoreModules(
   const pen = createPenActions(editor, graph, state)
   const vectorEdit = createVectorEditActions(editor, graph, state)
   const documentIO = createDocumentIOActions(editor, state, viewportSize)
+  // SPIKE embed: load the HTTP-backed document at boot; expose a probe handle
+  if (embedConfig) {
+    state.autosaveEnabled = true
+    void fetchEmbedDocument().then((f) => documentIO.openFigFile(f))
+    ;(window as unknown as Record<string, unknown>).__opSession = { editor, state }
+  }
   const documentExport = createDocumentExportActions(editor, state, io, documentIO.downloadBlob)
   const mobileClipboard = createMobileClipboardActions(editor, state)
   const profiler = createProfilerActions(editor)

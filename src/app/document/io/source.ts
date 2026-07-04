@@ -2,6 +2,7 @@ import type { Editor, EditorState } from '@open-pencil/core/editor'
 import { exportFigFile } from '@open-pencil/core/io/formats/fig'
 
 import { createAutosave } from '@/app/document/autosave'
+import { embedConfig, saveEmbedDocument } from '@/app/embed'
 import {
   documentNameFromFigPath,
   downloadNameFromPath,
@@ -70,11 +71,18 @@ export function createDocumentSourceActions({
     }
   })
 
+  // SPIKE embed: HTTP-backed document source
+  async function saveToEmbed() {
+    await saveEmbedDocument(await buildFigFile())
+    setSavedVersion(state.sceneVersion)
+  }
+
   const { disposeAutosave } = createAutosave({
     state,
     getSavedVersion,
-    hasWritableSource: () => !!getFileHandle() || !!getFilePath(),
-    saveCurrentDocument: async () => writeFile(await buildFigFile())
+    hasWritableSource: () => !!embedConfig || !!getFileHandle() || !!getFilePath(),
+    saveCurrentDocument: async () =>
+      embedConfig ? saveToEmbed() : writeFile(await buildFigFile())
   })
 
   function setDocumentSource(
@@ -117,7 +125,7 @@ export function createDocumentSourceActions({
     setPlannedFilePath,
     startWatchingCurrentFile,
     disposeDocumentIO,
-    saveFigFile,
+    saveFigFile: embedConfig ? saveToEmbed : saveFigFile,
     saveFigFileAs
   }
 }
