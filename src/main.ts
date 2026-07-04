@@ -8,14 +8,15 @@ import { IS_TAURI } from '@/constants'
 import App from './App.vue'
 import router from './router'
 
-import { installEmbedChrome } from '@/app/embed'
+// MESAAS: embed mode disables PWA registration below
+import { embedConfig } from '@/app/embed'
 
 preloadFonts()
-installEmbedChrome()
 const head = createHead()
 createApp(App).use(router).use(head).mount('#app')
 
-if (!IS_TAURI) {
+if (!IS_TAURI && !embedConfig) {
+  // MESAAS: no service worker inside the CRM embed
   void import('virtual:pwa-register').then(({ registerSW }) => {
     registerSW({ immediate: true })
   })

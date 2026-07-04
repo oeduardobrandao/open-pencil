@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 
 import { useI18n } from '@open-pencil/vue'
+// MESAAS: app menubar hidden in embed mode
+import { embedConfig } from '@/app/embed'
 
 import AppMenu from './AppMenu.vue'
 import AssetsPanel from './AssetsPanel.vue'
@@ -11,6 +13,7 @@ import PagesPanel from './PagesPanel.vue'
 
 const { menu, panels } = useI18n()
 const activePanel = ref<'file' | 'assets'>('file')
+const inEmbed = !!embedConfig // MESAAS
 </script>
 
 <template>
@@ -19,7 +22,8 @@ const activePanel = ref<'file' | 'assets'>('file')
     class="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-border bg-panel"
     style="contain: paint layout style"
   >
-    <AppMenu />
+    <!-- MESAAS: no File/Edit/View menubar in embed -->
+    <AppMenu v-if="!inEmbed" />
     <div class="flex shrink-0 gap-1 border-b border-border px-2 py-1.5">
       <button
         data-test-id="left-panel-layers-tab"

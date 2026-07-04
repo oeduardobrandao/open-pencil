@@ -1,8 +1,15 @@
 import type { ViewportSize } from '@/app/document/io/types'
 
 export function yieldToUI(): Promise<void> {
+  // MESAAS: rAF never fires in render-throttled (e.g. cross-origin / backgrounded)
+  // iframes, which stalled document open forever. Race it with a short timeout —
+  // still yields, but never blocks correctness on paint scheduling.
   return new Promise((resolve) => {
-    requestAnimationFrame(() => resolve())
+    const timer = setTimeout(() => resolve(), 100)
+    requestAnimationFrame(() => {
+      clearTimeout(timer)
+      resolve()
+    })
   })
 }
 

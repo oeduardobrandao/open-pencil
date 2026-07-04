@@ -17,6 +17,9 @@ import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { createDemoShapes } from '@/app/demo/document'
 import { useEditorStore } from '@/app/editor/active-store'
 import { createTab, activeTab, getActiveStore, tabCount } from '@/app/tabs'
+// MESAAS: embed mode hides host chrome, disables local automation, boots via HTTP
+import { embedConfig } from '@/app/embed'
+import { bootEmbedSession } from '@/app/embed/boot'
 
 import CollabPanel from '@/components/CollabPanel/CollabPanel.vue'
 import EditorCanvas from '@/components/EditorCanvas.vue'
@@ -32,6 +35,7 @@ import Toolbar from '@/components/Toolbar/Toolbar.vue'
 const route = useRoute()
 const params = useUrlSearchParams('history')
 const showChrome = !('no-chrome' in params)
+const inEmbed = !!embedConfig // MESAAS
 
 const createdInitialTab = tabCount() === 0
 const firstTab = createdInitialTab ? createTab() : (activeTab.value ?? createTab())
@@ -86,15 +90,25 @@ async function bindAssociatedFileOpen() {
 }
 
 onMounted(async () => {
-  try {
-    const mcp = await spawnMCPIfNeeded()
-    mcpCleanup.value = mcp?.disconnect ?? null
-    const tauri = isTauri()
-    if (import.meta.env.DEV || tauri) {
-      automationCleanup.value = connectAutomation(getActiveStore, mcp?.authToken ?? null).disconnect
+  // MESAAS: embed boot needs the mounted canvas (viewport size gates openFigFile)
+  if (inEmbed) {
+    void bootEmbedSession(store)
+  }
+  // MESAAS: no local MCP/automation bridge inside the CRM embed
+  if (!inEmbed) {
+    try {
+      const mcp = await spawnMCPIfNeeded()
+      mcpCleanup.value = mcp?.disconnect ?? null
+      const tauri = isTauri()
+      if (import.meta.env.DEV || tauri) {
+        automationCleanup.value = connectAutomation(
+          getActiveStore,
+          mcp?.authToken ?? null
+        ).disconnect
+      }
+    } catch (e) {
+      console.warn('[MCP]', e)
     }
-  } catch (e) {
-    console.warn('[MCP]', e)
   }
 
   try {
@@ -114,7 +128,8 @@ onUnmounted(() => {
 <template>
   <div data-test-id="editor-root" class="flex h-screen w-screen flex-col">
     <SafariBanner />
-    <TabBar />
+    <!-- MESAAS: tab bar (menubar/title) hidden in embed -->
+    <TabBar v-if="!inEmbed" />
 
     <!-- Desktop layout -->
     <SplitterGroup
@@ -155,7 +170,9 @@ onUnmounted(() => {
         :max-size="30"
         class="flex flex-col"
       >
+        <!-- MESAAS: collab/share hidden in embed -->
         <div
+          v-if="!inEmbed"
           class="flex shrink-0 items-center justify-between border-b border-border px-1.5 py-1.5"
         >
           <CollabPanel />

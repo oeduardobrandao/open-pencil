@@ -11,9 +11,12 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 
 - `src/app/embed/` — all Mesaas embed-mode code (new files only)
 - `src/app/document/io/source.ts` — embed save + autosave gate (marked `// MESAAS:`)
-- `src/app/editor/session/modules.ts` — embed boot hook (marked `// MESAAS:`)
-- `src/main.ts` — embed chrome install + PWA skip (marked `// MESAAS:`)
+- `src/app/document/io/browser.ts` — yieldToUI timeout fallback for throttled iframes (marked `// MESAAS:`, upstream PR candidate)
+- `src/main.ts` — PWA skip in embed (marked `// MESAAS:`)
 - `src/views/EditorView.vue` — chrome v-ifs + automation/collab guards (marked `// MESAAS:`)
+- `src/components/PropertiesPanel.vue` — Design-only tabs in embed (marked `// MESAAS:`)
+- `src/components/LayersPanel.vue` — menubar hidden in embed (marked `// MESAAS:`)
+- `tests/engine/app/embed.test.ts` — embed unit tests (new file)
 - `vercel.json`, `UPSTREAM.md` — deploy/docs (new files)
 
 ## Rebase procedure

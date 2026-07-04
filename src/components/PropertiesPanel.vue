@@ -3,6 +3,8 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 import { useI18n } from '@open-pencil/vue'
 import { useAIChat } from '@/app/ai/chat/use'
+// MESAAS: embed mode exposes only the Design tab (no Code export, no BYO-key AI chat)
+import { embedConfig } from '@/app/embed'
 
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
@@ -10,6 +12,7 @@ import DesignPanel from './DesignPanel.vue'
 import ZoomDropdown from './ZoomDropdown.vue'
 
 const { activeTab } = useAIChat()
+const inEmbed = !!embedConfig // MESAAS
 const { panels } = useI18n()
 </script>
 
@@ -29,6 +32,7 @@ const { panels } = useI18n()
           {{ panels.design }}
         </TabsTrigger>
         <TabsTrigger
+          v-if="!inEmbed"
           value="code"
           data-test-id="properties-tab-code"
           class="flex items-center gap-1 rounded px-2.5 py-1 text-xs text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
@@ -37,6 +41,7 @@ const { panels } = useI18n()
           {{ panels.code }}
         </TabsTrigger>
         <TabsTrigger
+          v-if="!inEmbed"
           value="ai"
           data-test-id="properties-tab-ai"
           class="flex items-center gap-1 rounded px-2.5 py-1 text-xs text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
@@ -57,6 +62,7 @@ const { panels } = useI18n()
       </TabsContent>
 
       <TabsContent
+        v-if="!inEmbed"
         value="code"
         class="flex min-h-0 flex-1 flex-col"
         :force-mount="true"
@@ -66,6 +72,7 @@ const { panels } = useI18n()
       </TabsContent>
 
       <TabsContent
+        v-if="!inEmbed"
         value="ai"
         class="flex min-h-0 flex-1 flex-col"
         :force-mount="true"
