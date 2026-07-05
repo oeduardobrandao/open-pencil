@@ -36,6 +36,7 @@ const route = useRoute()
 const params = useUrlSearchParams('history')
 const showChrome = !('no-chrome' in params)
 const inEmbed = !!embedConfig // MESAAS
+const embedReadOnly = !!embedConfig?.readOnly // MESAAS: view-only — no toolbar, no keybindings
 
 const createdInitialTab = tabCount() === 0
 const firstTab = createdInitialTab ? createTab() : (activeTab.value ?? createTab())
@@ -48,7 +49,8 @@ if (createdInitialTab && route.meta.demo && !('test' in params)) {
 }
 
 useHead({ title: route.meta.demo ? 'Demo' : undefined })
-useKeyboard()
+// MESAAS: readOnly embeds bind no shortcuts (clipboard/nudge/delete all mutate)
+if (!embedReadOnly) useKeyboard()
 useMenu()
 
 const collab = useCollab(getActiveStore)
@@ -157,7 +159,8 @@ onUnmounted(() => {
       <SplitterPanel id="canvas" :default-size="initialEditorLayout[1]" :min-size="30" class="flex">
         <div class="relative flex min-w-0 flex-1">
           <EditorCanvas />
-          <Toolbar />
+          <!-- MESAAS: no creation tools in a readOnly embed -->
+          <Toolbar v-if="!embedReadOnly" />
         </div>
       </SplitterPanel>
       <SplitterResizeHandle class="group relative z-10 -mx-1 w-2 cursor-col-resize">
@@ -190,7 +193,8 @@ onUnmounted(() => {
       <div class="relative flex min-w-0 flex-1">
         <EditorCanvas />
         <MobileHud />
-        <Toolbar />
+        <!-- MESAAS: no creation tools in a readOnly embed -->
+        <Toolbar v-if="!embedReadOnly" />
       </div>
       <MobileDrawer />
     </div>

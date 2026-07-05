@@ -1,6 +1,7 @@
 import { expect, mock, test } from 'bun:test'
 
 import { EmbedAuthError, EmbedConflictError, createEmbedClient } from '@/app/embed/client'
+import { parseEmbedConfig } from '@/app/embed/config'
 import { createBridge } from '@/app/embed/bridge'
 
 const cfg = { docUrl: 'https://api.test/doc?post_id=1', parentOrigin: 'https://crm.test' }
@@ -81,4 +82,17 @@ test('inbound messages are dropped unless origin and version match', () => {
   b.handleMessage({ origin: 'https://crm.test', data: { v: 2, type: 'auth', accessToken: 'v2' } } as MessageEvent)
   b.handleMessage({ origin: 'https://crm.test', data: null } as MessageEvent)
   expect(got).toEqual(['ok'])
+})
+
+test('parseEmbedConfig: readOnly=1 flags view-only, absent/other values do not', () => {
+  const base = '?embed=1&docUrl=https%3A%2F%2Fapi.test%2Fblob%3Fdesign_id%3D1&parentOrigin=https%3A%2F%2Fcrm.test'
+  expect(parseEmbedConfig(base)?.readOnly).toBe(false)
+  expect(parseEmbedConfig(`${base}&readOnly=1`)?.readOnly).toBe(true)
+  expect(parseEmbedConfig(`${base}&readOnly=0`)?.readOnly).toBe(false)
+  expect(parseEmbedConfig(`${base}&readOnly=1`)?.docUrl).toBe('https://api.test/blob?design_id=1')
+})
+
+test('parseEmbedConfig: null without embed=1 or docUrl', () => {
+  expect(parseEmbedConfig('?docUrl=https%3A%2F%2Fapi.test')).toBe(null)
+  expect(parseEmbedConfig('?embed=1')).toBe(null)
 })

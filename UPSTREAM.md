@@ -9,8 +9,10 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 
 ## Diff surface (keep this list exact)
 
-- `src/app/embed/` — all Mesaas embed-mode code (new files only)
-- `src/app/document/io/source.ts` — embed save + autosave gate (marked `// MESAAS:`)
+- `src/app/embed/` — all Mesaas embed-mode code (new files only; `config.ts` = pure URL
+  parsing incl. `readOnly=1` view-only mode: HAND tool after doc load, no
+  autosave/save/dirty, no toolbar/keybindings, dblclick+contextmenu neutralized)
+- `src/app/document/io/source.ts` — embed save + autosave gate + readOnly guards (marked `// MESAAS:`)
 - `src/app/document/io/browser.ts` — yieldToUI timeout fallback for throttled iframes (marked `// MESAAS:`, upstream PR candidate)
 - `src/main.ts` — PWA skip in embed (marked `// MESAAS:`)
 - `src/views/EditorView.vue` — chrome v-ifs + automation/collab guards (marked `// MESAAS:`)

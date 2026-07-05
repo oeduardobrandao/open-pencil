@@ -15,13 +15,11 @@ import { type EmbedClient, createEmbedClient } from './client'
 
 export { EmbedAuthError, EmbedConflictError } from './client'
 
-const params = new URLSearchParams(window.location.search)
-const docUrl = params.get('docUrl')
+import { parseEmbedConfig } from './config'
 
-export const embedConfig =
-  params.get('embed') === '1' && docUrl
-    ? { docUrl, parentOrigin: params.get('parentOrigin') }
-    : null
+export { type EmbedConfig, parseEmbedConfig } from './config'
+
+export const embedConfig = parseEmbedConfig(window.location.search)
 
 export const embedClient: EmbedClient | null = embedConfig
   ? createEmbedClient(embedConfig)

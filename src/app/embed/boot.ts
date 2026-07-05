@@ -9,11 +9,27 @@ import { awaitFirstAuth, bridge, embedClient, embedConfig, exposeDevProbe } from
 export async function bootEmbedSession(store: EditorStore): Promise<void> {
   if (!embedConfig || !embedClient) return
 
-  store.state.autosaveEnabled = true
+  // readOnly: no autosave, `save` bridge messages ignored, pan-only pointer (HAND tool —
+  // EditorView also hides the toolbar and skips keyboard bindings, and the capture
+  // listeners below neutralize dblclick text-edit and the right-click selection menu).
+  store.state.autosaveEnabled = !embedConfig.readOnly
   exposeDevProbe({ editor: store, state: store.state })
-  bridge.on('save', () => {
-    void store.saveFigFile()
-  })
+  if (!embedConfig.readOnly) {
+    bridge.on('save', () => {
+      void store.saveFigFile()
+    })
+  } else {
+    for (const type of ['dblclick', 'contextmenu'] as const) {
+      window.addEventListener(
+        type,
+        (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        },
+        { capture: true }
+      )
+    }
+  }
 
   try {
     bridge.emit('ready')
@@ -25,6 +41,7 @@ export async function bootEmbedSession(store: EditorStore): Promise<void> {
       store.state.currentPageId = contentPage.id
       await store.fitCurrentPageToViewport()
     }
+    if (embedConfig.readOnly) store.setTool('HAND')
     bridge.emit('doc:loaded', { rev })
   } catch (e) {
     toast.error('Não foi possível carregar o design.')

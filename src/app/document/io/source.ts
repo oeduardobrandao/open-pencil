@@ -78,6 +78,9 @@ export function createDocumentSourceActions({
   // surface every outcome on the bridge (contract: estudio-v2-editor-contract.md).
   async function saveToEmbed() {
     if (!embedClient) return
+    // readOnly embed never writes — belt on top of the disabled autosave/save handler
+    // (the backend would refuse with 403 read_only anyway).
+    if (embedConfig?.readOnly) return
     const versionAtBuild = state.sceneVersion
     try {
       const bytes = await buildFigFile()
@@ -99,8 +102,9 @@ export function createDocumentSourceActions({
     }
   }
 
-  // MESAAS: dirty signal for the host shell (sceneVersion drifts from savedVersion)
-  if (embedConfig) {
+  // MESAAS: dirty signal for the host shell (sceneVersion drifts from savedVersion).
+  // Never emitted in readOnly — nothing can be saved, so nothing is ever "pending".
+  if (embedConfig && !embedConfig.readOnly) {
     watchDebounced(
       () => state.sceneVersion,
       (version) => {
