@@ -1,5 +1,7 @@
 import { useLocalStorage } from '@vueuse/core'
 
+import { IS_BROWSER } from '@open-pencil/core/constants'
+
 import type { SceneGraph } from '@open-pencil/core/scene-graph'
 import {
   fontManager,
@@ -14,6 +16,8 @@ import {
   createTauriDownloadedFontCache,
   downloadedFontCacheSummary as tauriDownloadedFontCacheSummary
 } from '@/app/editor/fonts/cache'
+import { parseEmbedConfig } from '@/app/embed/config'
+import { filterEmbedFontOptions } from '@/app/embed/fonts'
 import { isTauri } from '@/app/tauri/env'
 
 if (typeof navigator !== 'undefined') {
@@ -104,6 +108,11 @@ export async function listFamilies(): Promise<FontFamilyOption[]> {
     return fonts.map((f) => ({ family: f.family, source: 'local' }))
   }
   const fonts = await fontManager.listFamilyOptions()
+  // MESAAS: embed sessions only list families the render service can resolve. Parsed
+  // lazily (never import embed/index here — it reads window.location at module load,
+  // which crashes windowless consumers like the CLI eval).
+  const isEmbed = IS_BROWSER && !!parseEmbedConfig(window.location.search)
+  if (isEmbed) return filterEmbedFontOptions(fonts)
   return googleFontsEnabled.value ? fonts : fonts.filter((font) => font.source !== 'google')
 }
 

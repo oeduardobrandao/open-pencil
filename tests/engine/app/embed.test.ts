@@ -124,3 +124,17 @@ test('normalizeFrameClipping clips page-level frames, leaves nested frames and s
 
   expect(normalizeFrameClipping(graph)).toBe(0) // idempotent
 })
+
+// ─── filterEmbedFontOptions (MESAAS) ─────────────────────────────────────────
+
+import { filterEmbedFontOptions } from '@/app/embed/fonts'
+
+test('filterEmbedFontOptions drops local families, keeps bundled + google', () => {
+  const filtered = filterEmbedFontOptions([
+    { family: 'Inter', source: 'bundled' },
+    { family: 'Playfair Display', source: 'google' },
+    { family: 'Helvetica Neue', source: 'local' },
+    { family: 'Arial', source: 'local' }
+  ])
+  expect(filtered.map((f) => f.family)).toEqual(['Inter', 'Playfair Display'])
+})

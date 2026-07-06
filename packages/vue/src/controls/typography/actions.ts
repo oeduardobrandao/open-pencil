@@ -52,7 +52,6 @@ export function createTypographyState(editor: Editor) {
 type TypographyActionOptions = {
   editor: Editor
   node: ComputedRef<SceneNode | null>
-  currentWeightLabel: ComputedRef<string>
   activeFormatting: ComputedRef<string[]>
   options: UseTypographyOptions
 }
@@ -60,7 +59,6 @@ type TypographyActionOptions = {
 export function createTypographyActions({
   editor,
   node,
-  currentWeightLabel,
   activeFormatting,
   options
 }: TypographyActionOptions) {
