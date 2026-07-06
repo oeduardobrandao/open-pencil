@@ -5,6 +5,7 @@ import type { EditorStore } from '@/app/editor/session/create'
 import { toast } from '@/app/shell/ui'
 
 import { awaitFirstAuth, bridge, embedClient, embedConfig, exposeDevProbe } from './index'
+import { normalizeFrameClipping } from './normalize'
 
 export async function bootEmbedSession(store: EditorStore): Promise<void> {
   if (!embedConfig || !embedClient) return
@@ -40,6 +41,10 @@ export async function bootEmbedSession(store: EditorStore): Promise<void> {
     if (contentPage) {
       store.state.currentPageId = contentPage.id
       await store.fitCurrentPageToViewport()
+    }
+    // Editable only — readOnly sessions never write; the change rides the regular autosave.
+    if (!embedConfig.readOnly && normalizeFrameClipping(store.graph) > 0) {
+      store.requestRender()
     }
     if (embedConfig.readOnly) store.setTool('HAND')
     bridge.emit('doc:loaded', { rev })

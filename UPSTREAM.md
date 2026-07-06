@@ -11,7 +11,12 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 
 - `src/app/embed/` — all Mesaas embed-mode code (new files only; `config.ts` = pure URL
   parsing incl. `readOnly=1` view-only mode: HAND tool after doc load, no
-  autosave/save/dirty, no toolbar/keybindings, dblclick+contextmenu neutralized)
+  autosave/save/dirty, no toolbar/keybindings, dblclick+contextmenu neutralized;
+  `normalize.ts` = boot-time clipsContent normalization of page-level frames, editable
+  sessions only)
+- `packages/vue/src/shared/input/draw.ts` — frame tool sets `clipsContent: true` on
+  creation (marked `// MESAAS:`, Figma-parity, upstream PR candidate — upstream defaults
+  to false, so the canvas disagrees with node-scoped exports)
 - `src/app/document/io/source.ts` — embed save + autosave gate + readOnly guards (marked `// MESAAS:`)
 - `src/app/document/io/browser.ts` — yieldToUI timeout fallback for throttled iframes (marked `// MESAAS:`, upstream PR candidate)
 - `src/main.ts` — PWA skip in embed (marked `// MESAAS:`)

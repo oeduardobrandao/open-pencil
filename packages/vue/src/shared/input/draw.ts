@@ -24,6 +24,9 @@ export function startShapeDraw(
 
   editor.undo.beginBatch('Create shape')
   const nodeId = editor.createShape(nodeType, cx, cy, 0, 0)
+  // MESAAS: frames clip their content on creation (Figma parity — upstream defaults
+  // clipsContent to false, which makes the canvas disagree with node-scoped exports).
+  if (nodeType === 'FRAME') editor.graph.updateNode(nodeId, { clipsContent: true })
   editor.select([nodeId])
   setDrag({ type: 'draw', startX: cx, startY: cy, nodeId })
 }

@@ -96,3 +96,31 @@ test('parseEmbedConfig: null without embed=1 or docUrl', () => {
   expect(parseEmbedConfig('?docUrl=https%3A%2F%2Fapi.test')).toBe(null)
   expect(parseEmbedConfig('?embed=1')).toBe(null)
 })
+
+// ─── normalizeFrameClipping (MESAAS) ─────────────────────────────────────────
+
+import { SceneGraph } from '@open-pencil/core'
+
+import { normalizeFrameClipping } from '@/app/embed/normalize'
+
+test('normalizeFrameClipping clips page-level frames, leaves nested frames and shapes alone', () => {
+  const graph = new SceneGraph()
+  const page = graph.getPages()[0].id
+  const frameA = graph.createNode('FRAME', page, { name: '1', width: 1080, height: 1350 })
+  const frameB = graph.createNode('FRAME', page, {
+    name: '2',
+    width: 1080,
+    height: 1350,
+    clipsContent: true
+  })
+  const nested = graph.createNode('FRAME', frameA.id, { name: 'group', width: 100, height: 100 })
+  const rect = graph.createNode('RECTANGLE', page, { name: 'r', width: 10, height: 10 })
+
+  expect(normalizeFrameClipping(graph)).toBe(1) // only frameA needed the fix
+  expect(graph.getNode(frameA.id)?.clipsContent).toBe(true)
+  expect(graph.getNode(frameB.id)?.clipsContent).toBe(true)
+  expect(graph.getNode(nested.id)?.clipsContent).toBe(false)
+  expect(graph.getNode(rect.id)?.clipsContent).toBe(false)
+
+  expect(normalizeFrameClipping(graph)).toBe(0) // idempotent
+})
