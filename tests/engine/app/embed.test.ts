@@ -138,3 +138,86 @@ test('filterEmbedFontOptions drops local families, keeps bundled + google', () =
   ])
   expect(filtered.map((f) => f.family)).toEqual(['Inter', 'Playfair Display'])
 })
+
+// ─── first-user-interaction latch (MESAAS) ───────────────────────────────────
+// "First save = first user edit": embed-editable autosave must stay suppressed
+// until the user genuinely touches the editor, so compose-built docs (image →
+// editable design import) don't autosave from boot-time text reshape / clip
+// normalization alone and clear the server-side media_apply_held hold early.
+
+import {
+  hasUserInteracted,
+  resetUserInteraction,
+  watchForFirstUserInteraction
+} from '@/app/embed/interaction'
+
+// Minimal addEventListener/removeEventListener double — the module only needs a
+// window-shaped target, not a real DOM, so this stays unit-testable without one.
+function fakeWindow() {
+  const listeners = new Map<string, Set<(e: unknown) => void>>()
+  return {
+    addEventListener: (type: string, fn: (e: unknown) => void) => {
+      const set = listeners.get(type) ?? new Set()
+      set.add(fn)
+      listeners.set(type, set)
+    },
+    removeEventListener: (type: string, fn: (e: unknown) => void) => {
+      listeners.get(type)?.delete(fn)
+    },
+    dispatch: (type: string) => {
+      for (const fn of listeners.get(type) ?? []) fn({})
+    }
+  }
+}
+
+test('interaction latch starts false and flips on pointerdown', () => {
+  resetUserInteraction()
+  expect(hasUserInteracted()).toBe(false)
+  const win = fakeWindow()
+  watchForFirstUserInteraction(win)
+  expect(hasUserInteracted()).toBe(false)
+  win.dispatch('pointerdown')
+  expect(hasUserInteracted()).toBe(true)
+})
+
+test('interaction latch flips on keydown', () => {
+  resetUserInteraction()
+  const win = fakeWindow()
+  watchForFirstUserInteraction(win)
+  expect(hasUserInteracted()).toBe(false)
+  win.dispatch('keydown')
+  expect(hasUserInteracted()).toBe(true)
+})
+
+test('watchForFirstUserInteraction returns a disposer that removes both listeners', () => {
+  resetUserInteraction()
+  const win = fakeWindow()
+  const dispose = watchForFirstUserInteraction(win)
+  dispose()
+  win.dispatch('pointerdown')
+  win.dispatch('keydown')
+  expect(hasUserInteracted()).toBe(false)
+})
+
+test('autosave gate: skip before interaction, proceed after', () => {
+  resetUserInteraction()
+  // Mirrors the canAutosave predicate wired in src/app/document/io/source.ts:
+  // `() => !embedConfig || embedConfig.readOnly || hasUserInteracted()`.
+  const embedConfig = { readOnly: false }
+  const canAutosave = () => !embedConfig || embedConfig.readOnly || hasUserInteracted()
+
+  expect(canAutosave()).toBe(false) // boot-time mutation must NOT autosave
+
+  const win = fakeWindow()
+  watchForFirstUserInteraction(win)
+  win.dispatch('keydown')
+
+  expect(canAutosave()).toBe(true) // after first real edit, autosave proceeds normally
+})
+
+test('autosave gate: readOnly always proceeds (autosave already off upstream of this gate)', () => {
+  resetUserInteraction()
+  const embedConfig = { readOnly: true }
+  const canAutosave = () => !embedConfig || embedConfig.readOnly || hasUserInteracted()
+  expect(canAutosave()).toBe(true)
+})

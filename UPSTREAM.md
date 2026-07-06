@@ -13,7 +13,13 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
   parsing incl. `readOnly=1` view-only mode: HAND tool after doc load, no
   autosave/save/dirty, no toolbar/keybindings, dblclick+contextmenu neutralized;
   `normalize.ts` = boot-time clipsContent normalization of page-level frames, editable
-  sessions only)
+  sessions only; `interaction.ts` = "first save = first user edit" latch — embed-editable
+  autosave stays suppressed until the first pointerdown/keydown (capture phase, wired
+  from `boot.ts`), gated via the `canAutosave` predicate in `document/io/source.ts`.
+  Compose-built docs (image → editable design import) get re-measured/normalized on
+  open alone, which dirtied sceneVersion and autosaved with zero user input, clearing
+  the server-side `media_apply_held` hold before anyone looked at the design — embed-
+  specific fix, NOT an upstream PR candidate)
 - `packages/vue/src/shared/input/draw.ts` — frame tool sets `clipsContent: true` on
   creation (marked `// MESAAS:`, Figma-parity, upstream PR candidate — upstream defaults
   to false, so the canvas disagrees with node-scoped exports)
@@ -28,6 +34,9 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
   panel displays topmost-first (Figma convention; childIds is paint order) with the
   drag-drop index math mirrored (marked `// MESAAS:`)
 - `src/app/document/io/source.ts` — embed save + autosave gate + readOnly guards (marked `// MESAAS:`)
+- `src/app/document/autosave/create.ts` — optional `canAutosave` predicate on
+  `createAutosave` (marked `// MESAAS:`, defaults to always-true so desktop/Tauri and
+  non-embed web are unaffected; embed-editable wires it to the interaction latch above)
 - `src/app/document/io/browser.ts` — yieldToUI timeout fallback for throttled iframes (marked `// MESAAS:`, upstream PR candidate)
 - `src/main.ts` — PWA skip in embed (marked `// MESAAS:`)
 - `src/views/EditorView.vue` — chrome v-ifs + automation/collab guards (marked `// MESAAS:`)

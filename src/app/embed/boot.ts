@@ -6,6 +6,7 @@ import type { EditorStore } from '@/app/editor/session/create'
 import { toast } from '@/app/shell/ui'
 
 import { awaitFirstAuth, bridge, embedClient, embedConfig, exposeDevProbe } from './index'
+import { watchForFirstUserInteraction } from './interaction'
 import { normalizeFrameClipping } from './normalize'
 
 export async function bootEmbedSession(store: EditorStore): Promise<void> {
@@ -17,6 +18,10 @@ export async function bootEmbedSession(store: EditorStore): Promise<void> {
   store.state.autosaveEnabled = !embedConfig.readOnly
   exposeDevProbe({ editor: store, state: store.state })
   if (!embedConfig.readOnly) {
+    // MESAAS: "first save = first user edit" — see embed/interaction.ts and the
+    // canAutosave gate in document/io/source.ts. Manual `save` bridge messages below are
+    // NOT gated by this latch; they are an explicit host-initiated save request.
+    watchForFirstUserInteraction(window)
     bridge.on('save', () => {
       void store.saveFigFile()
     })

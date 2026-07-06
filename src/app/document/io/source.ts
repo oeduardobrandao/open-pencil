@@ -5,6 +5,7 @@ import { watchDebounced } from '@vueuse/core'
 
 import { createAutosave } from '@/app/document/autosave'
 import { EmbedAuthError, EmbedConflictError, bridge, embedClient, embedConfig } from '@/app/embed'
+import { hasUserInteracted } from '@/app/embed/interaction'
 import { toast } from '@/app/shell/ui'
 import {
   documentNameFromFigPath,
@@ -119,7 +120,15 @@ export function createDocumentSourceActions({
     getSavedVersion,
     hasWritableSource: () => !!embedConfig || !!getFileHandle() || !!getFilePath(),
     saveCurrentDocument: async () =>
-      embedConfig ? saveToEmbed() : writeFile(await buildFigFile())
+      embedConfig ? saveToEmbed() : writeFile(await buildFigFile()),
+    // MESAAS: embed-editable only — "first save = first user edit". Compose-built docs
+    // (image → editable design import) get re-measured/normalized on open, which alone
+    // dirties sceneVersion; without this gate that boot-time mutation autosaves within
+    // seconds with zero user input, clearing the server-side media_apply_held hold
+    // before anyone looked at the design. readOnly never reaches here (autosave is off
+    // via state.autosaveEnabled already); desktop/non-embed has no embedConfig, so the
+    // gate is a no-op true for them.
+    canAutosave: () => !embedConfig || embedConfig.readOnly || hasUserInteracted()
   })
 
   function setDocumentSource(

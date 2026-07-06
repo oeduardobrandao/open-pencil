@@ -9,13 +9,18 @@ type AutosaveOptions = {
   getSavedVersion: () => number
   hasWritableSource: () => boolean
   saveCurrentDocument: () => Promise<void>
+  // MESAAS: embed-editable suppresses autosave until the user's first real interaction
+  // (see src/app/embed/interaction.ts — "first save = first user edit"). Optional so
+  // desktop/Tauri and non-embed web keep the exact prior behavior; defaults to always-on.
+  canAutosave?: () => boolean
 }
 
 export function createAutosave({
   state,
   getSavedVersion,
   hasWritableSource,
-  saveCurrentDocument
+  saveCurrentDocument,
+  canAutosave = () => true
 }: AutosaveOptions) {
   const stop = watchDebounced(
     () => state.sceneVersion,
@@ -23,6 +28,7 @@ export function createAutosave({
       if (version === getSavedVersion()) return
       if (!state.autosaveEnabled) return
       if (!hasWritableSource()) return
+      if (!canAutosave()) return
       try {
         await saveCurrentDocument()
       } catch (e) {
