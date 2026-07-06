@@ -35,7 +35,10 @@ const { draggingId, instruction, instructionTargetId, setupItem } = useLayerDrag
 function buildTree(parentId: string): LayerNode[] {
   const parent = editor.graph.getNode(parentId)
   if (!parent) return []
-  return parent.childIds
+  // MESAAS: topmost-first (Figma convention). childIds is PAINT order — last child draws
+  // on top — so the panel shows the reversed list; useLayerDrag mirrors the index math.
+  return [...parent.childIds]
+    .reverse()
     .map((cid) => editor.graph.getNode(cid))
     .filter((n): n is NonNullable<typeof n> => !!n)
     .map((node) => ({

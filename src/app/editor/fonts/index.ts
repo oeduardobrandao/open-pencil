@@ -8,6 +8,7 @@ import {
   type LocalFontAccessState
 } from '@open-pencil/core/text'
 
+import { getActiveEditorStoreOrNull } from '@/app/editor/active-store'
 import {
   clearDownloadedFontCache as clearTauriDownloadedFontCache,
   createTauriDownloadedFontCache,
@@ -132,6 +133,21 @@ function clearTextPictures(graph: SceneGraph): void {
 }
 
 export async function loadFont(family: string, style = 'Regular'): Promise<ArrayBuffer | null> {
+  const buffer = await loadFontBuffer(family, style)
+  // MESAAS: a font that arrives AFTER a text node was shaped leaves the node's cached
+  // (empty or wrong-face) textPicture on screen forever — nothing else invalidates it.
+  // Any successful load re-shapes the active document (same pattern as ensureGraphFonts).
+  if (buffer) {
+    const store = getActiveEditorStoreOrNull()
+    if (store) {
+      clearTextPictures(store.graph)
+      store.requestRender()
+    }
+  }
+  return buffer
+}
+
+async function loadFontBuffer(family: string, style: string): Promise<ArrayBuffer | null> {
   configureTauriFontCache()
   if (isTauri()) {
     const cached = await fontManager.loadCachedFont(family, style)

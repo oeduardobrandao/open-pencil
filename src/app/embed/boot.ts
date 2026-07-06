@@ -1,6 +1,7 @@
 // MESAAS: embed-mode session boot — runs from EditorView.onMounted (the canvas
 // must be mounted first: openFigFile awaits fitCurrentPageToViewport, which
 // blocks until the viewport has a size).
+import { ensureGraphFonts } from '@/app/editor/fonts'
 import type { EditorStore } from '@/app/editor/session/create'
 import { toast } from '@/app/shell/ui'
 
@@ -44,6 +45,13 @@ export async function bootEmbedSession(store: EditorStore): Promise<void> {
     }
     // Editable only — readOnly sessions never write; the change rides the regular autosave.
     if (!embedConfig.readOnly && normalizeFrameClipping(store.graph) > 0) {
+      store.requestRender()
+    }
+    // Load every font family the document references BEFORE first paint settles — on the
+    // web, nothing else does (local-font access is permission-gated and the typography
+    // controls only load on user changes). Read-only too: display needs the glyphs.
+    const pageChildIds = store.graph.getPages().flatMap((p) => p.childIds)
+    if (await ensureGraphFonts(store.graph, pageChildIds)) {
       store.requestRender()
     }
     if (embedConfig.readOnly) store.setTool('HAND')

@@ -17,6 +17,13 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 - `packages/vue/src/shared/input/draw.ts` — frame tool sets `clipsContent: true` on
   creation (marked `// MESAAS:`, Figma-parity, upstream PR candidate — upstream defaults
   to false, so the canvas disagrees with node-scoped exports)
+- `src/app/editor/fonts/index.ts` — successful `loadFont` clears cached textPictures on
+  the active graph + re-renders (marked `// MESAAS:`, upstream PR candidate — async font
+  arrivals otherwise leave empty/wrong-face shapes on screen forever; this is why bold/
+  italic made text vanish and family changes never applied on the web)
+- `packages/vue/src/primitives/LayerTree/{LayerTreeRoot.vue,useLayerDrag.ts}` — layers
+  panel displays topmost-first (Figma convention; childIds is paint order) with the
+  drag-drop index math mirrored (marked `// MESAAS:`)
 - `src/app/document/io/source.ts` — embed save + autosave gate + readOnly guards (marked `// MESAAS:`)
 - `src/app/document/io/browser.ts` — yieldToUI timeout fallback for throttled iframes (marked `// MESAAS:`, upstream PR candidate)
 - `src/main.ts` — PWA skip in embed (marked `// MESAAS:`)

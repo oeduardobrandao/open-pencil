@@ -116,10 +116,12 @@ export function useLayerDrag(
       if (!targetParent) return
       const targetIndex = targetParent.childIds.indexOf(targetId)
 
+      // MESAAS: the panel displays topmost-first (reversed childIds), so visually-above
+      // means AFTER the target in paint order and visually-below means before it.
       if (inst.type === 'reorder-above') {
-        editor.reorderChildWithUndo(sourceId, targetParentId, targetIndex)
-      } else if (inst.type === 'reorder-below') {
         editor.reorderChildWithUndo(sourceId, targetParentId, targetIndex + 1)
+      } else if (inst.type === 'reorder-below') {
+        editor.reorderChildWithUndo(sourceId, targetParentId, targetIndex)
       } else {
         const container = editor.graph.getNode(targetId)
         if (!container || !editor.graph.isContainer(targetId)) return
