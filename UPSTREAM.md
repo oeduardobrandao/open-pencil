@@ -24,7 +24,10 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
   session 1 but the collision guard only cleared session 0, so import → createNode →
   export reused an imported session-1 guid and deleted the node that owned it)
 - `tests/engine/io/fig/roundtrip/reexport-guids.test.ts` — regression test for the above (new file)
-- `vercel.json`, `UPSTREAM.md` — deploy/docs (new files)
+- `vercel.json`, `UPSTREAM.md` — deploy/docs (new files). `vercel.json` sets
+  `Content-Security-Policy: frame-ancestors` locked to the Mesaas CRM production
+  origins — the deployed editor can only be embedded by the CRM (dev servers are
+  unaffected; the header ships only via Vercel)
 
 ## Rebase procedure
 
@@ -32,7 +35,7 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
 2. `git fetch upstream --tags && git switch master && git merge --ff-only upstream/master`
 3. `git switch mesaas && git rebase <new-tag>` — conflicts can only occur in the files above
 4. Re-run the embed test suite (`bun test src/app/embed/`) + the browser loop
-   (sm-crm `spike/openpencil/embed.html` host page) before pushing.
+   (sm-crm CRM host: `npm run dev` → Entregas → "Abrir no Estúdio") before pushing.
 5. The Mesaas doc service pins the same `@open-pencil/core` version as this fork —
    upgrade BOTH together (render parity depends on it).
 
