@@ -70,14 +70,16 @@ export function createTypographyActions({
 
   async function setFamily(family: string) {
     if (!node.value) return
-    await doLoadFont(family, currentWeightLabel.value)
+    // MESAAS: include the italic axis — loading only the upright leaves italic nodes
+    // shaped against a missing typeface (blank glyphs).
+    await doLoadFont(family, weightToStyle(node.value.fontWeight, node.value.italic))
     editor.updateNodeWithUndo(node.value.id, { fontFamily: family }, 'Change font')
   }
 
   async function setWeight(weight: number) {
     if (!node.value) return
-    const { id, fontFamily } = node.value
-    const style = weightToStyle(weight)
+    const { id, fontFamily, italic } = node.value
+    const style = weightToStyle(weight, italic) // MESAAS: keep the italic axis
     editor.updateNodeWithUndo(id, { fontWeight: weight }, 'Change font weight')
     await doLoadFont(fontFamily, style)
   }
@@ -103,7 +105,11 @@ export function createTypographyActions({
 
   function toggleItalic() {
     if (!node.value) return
-    editor.updateNodeWithUndo(node.value.id, { italic: !node.value.italic }, 'Toggle italic')
+    const { id, fontFamily, fontWeight, italic } = node.value
+    editor.updateNodeWithUndo(id, { italic: !italic }, 'Toggle italic')
+    // MESAAS: the italic face is a different font file — without this load the node
+    // re-shapes against a missing typeface and the text vanishes.
+    void doLoadFont(fontFamily, weightToStyle(fontWeight, !italic))
   }
 
   function toggleDecoration(deco: 'UNDERLINE' | 'STRIKETHROUGH') {

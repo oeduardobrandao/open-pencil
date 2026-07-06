@@ -21,6 +21,9 @@ Everything is gated on `embedConfig` (see `src/app/embed/`) — without
   the active graph + re-renders (marked `// MESAAS:`, upstream PR candidate — async font
   arrivals otherwise leave empty/wrong-face shapes on screen forever; this is why bold/
   italic made text vanish and family changes never applied on the web)
+- `packages/vue/src/controls/typography/actions.ts` — setFamily/setWeight/toggleItalic
+  load the variant WITH the italic axis (marked `// MESAAS:`, upstream PR candidate —
+  toggleItalic loaded nothing at all; the others dropped the italic axis)
 - `packages/vue/src/primitives/LayerTree/{LayerTreeRoot.vue,useLayerDrag.ts}` — layers
   panel displays topmost-first (Figma convention; childIds is paint order) with the
   drag-drop index math mirrored (marked `// MESAAS:`)
